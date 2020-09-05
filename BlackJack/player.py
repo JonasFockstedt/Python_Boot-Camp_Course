@@ -1,4 +1,5 @@
 import main
+import deck
 import random
 
 
@@ -7,7 +8,11 @@ class Player:
     def __init__(self, name, balance=100):
         self.name = name
         self.balance = balance
-        self.hand = dict()
+        self.hand = list()
+        self.opponent = None
+        self.handStrength = 0
+        self.last_bet = 0
+        self.last_action = None
 
     def __str__(self):
         return f'{self.name} has ${self.balance} at their disposal.'
@@ -15,24 +20,27 @@ class Player:
     def check_balance(self):
         print(f'{self.name} has a balance of ${self.balance}')
 
-    def bet(self, withdrawal):
-        if withdrawal > self.balance:
-            print('Insufficient balance!')
-        else:
-            self.balance -= withdrawal
-            print(f'{self.name} bet ${withdrawal}')
+    def bet(self, amount):
+        self.balance -= amount
+        self.last_bet = amount
 
-    def hit(self):
-        suit = random.choice(list(main.deck.keys()))    # pick random card suit
-        rank = random.choice(list(main.deck.keys()))    # picks random key in dictionary
-        print(suit)
-        #print(f'Drew rank: {suit} {rank}')
-        #self.hand.append(suit + rank)
-        #print(self.hand)
-        # take out rank from the deck is not done properly
-        #main.deck.pop([suit][rank])
-        # main.deck.remove([suit])
-        for rank_suit in main.deck[0]:
-            if rank_suit == suit:
-                del main.deck[1][rank]
-        print('Test')
+    def hit(self, deck):
+        if self.name == 'Dealer':
+            deck.deal_cards(self)
+
+        elif self.name == 'Human':
+            deck.deal_cards(self)
+            # print(f'Your{self.hand}')
+
+    def compute_hand_strength(self):
+        cardValues = {"Two": 2, "Three": 3, "Four": 4, "Five": 5,
+                      "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9,
+                      "Ten": 10, "Jack": 10, "Queen": 10,
+                      "King": 10, "Ace": 11}
+        self.handStrength = 0
+        for card in self.hand:
+            self.handStrength += cardValues[card.split()[1]]
+
+        # If player has an Ace at hand, and has a hand strength of over 21, consider the Ace as value of 1.
+        if any('Ace' in card for card in self.hand) and self.handStrength > 21:
+            self.handStrength -= 10

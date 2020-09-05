@@ -1,66 +1,115 @@
-# TODO
-# Define cards (52 of them) DONE!
-# Jack, Queen, King has value of 10 DONE!
-# Aces can be treated as a 1 or 11, whichever the player prefers
-# A human and computer player
-# Closest to a card value of 21 wins
-# Human player has a balance of money
-# Human places bet
-# Hands for both players
-# Visualize hands
-# Computer starts with one card facing up, the other down
-# Human starts with two cards facing up
-# Human goes first
-# Prompt player to "Hit" or "Stay" (drawing new card, or don't)
-# Computer "hits" until having a higher value than player, or busts (over 21 in value)
-# If player loses, player loses money they did bet
-# If player wins, player gets doubled money back
-
-
 import player
-
-deck = dict()
-cardSuit = {'Hearts': {}, 'Diamonds': {}, 'Clubs': {}, 'Spades': {}}
-cardRank = {"Ace": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5, "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9,"Ten": 10,
-            "Jack": 10, "Queen": 10, "King": 10}
+import deck
+import sys
 
 
-# create deck
-def create_deck():
-    global deck
-    deck = cardSuit
-    for category in deck:
-        deck[category] = cardRank
+def run_game(balance=100):
+    game = True
 
+    # Initialize deck.
+    card_deck = deck.Deck()
+    card_deck.create_deck()
+    # Create computer and human player.
+    human = player.Player('Human', balance=balance)
+    dealer = player.Player('Dealer')
+    human.opponent = dealer
+    dealer.opponent = human
 
-def start_game():
-    while True:
-        create_player(input('Please type in your player name: '))
-        moreplayers = input('Are there more players that wants to play? (Y/N)')
-        if moreplayers == 'N':
-            break
+    active_player = human
 
+    # Deal two cards to each player.
+    for number in range(2):
+        card_deck.deal_cards(dealer)
+        card_deck.deal_cards(human)
 
-def create_player(name):
-    return player.Player(name)
+    while game:
+        # Human turn
+        if active_player == human and human.last_action != 'Stay' and game:
+            if human.last_bet == 0 and human.balance != 0:
+                print(f'Dealer has {dealer.hand[0]} at hand.')
+                print(f'You have {human.hand} at hand.')
+                while True:
+                    try:
+                        bet_amount = int(input(
+                            f'How much do you want to bet? You have {human.balance} credits available.\n'))
+                        if bet_amount > human.balance:
+                            print(
+                                f'You can not bet more credits than you already have!')
+                        else:
+                            human.bet(bet_amount)
+                            print(
+                                f'You bet {human.last_bet} amount of credits. Your balance is now {human.balance} credits.')
+                            break
+                    except:
+                        print('Invalid format.')
+
+            human.compute_hand_strength()
+            print(f'Your hand: {human.hand} (Strenght: {human.handStrength})')
+            print(f'Opponent hand: {dealer.hand[0]}')
+            action = input(f'Hit or stay? (Hit/Stay) ')
+            if action == 'Hit':
+                human.hit(card_deck)
+                human.last_action = 'Hit'
+                human.compute_hand_strength()
+                print(f'Your hand: {human.hand}')
+                if human.handStrength > 21:
+                    game = False
+                    print('Human busts, dealer wins!')
+                    return human.balance
+            elif action == 'Stay':
+                active_player = dealer
+                human.last_action = 'Stay'
+
+        # Dealer turn
+        elif active_player == dealer and game:
+            dealer.compute_hand_strength()
+            human.compute_hand_strength()
+            print(f'Dealer hand: {dealer.hand}')
+            if dealer.handStrength <= human.handStrength and dealer.handStrength <= 21:
+                dealer.hit(card_deck)
+                print('Dealer hits.')
+                dealer.compute_hand_strength()
+                print(
+                    f'Dealer hand: {dealer.hand} (Strength: {dealer.handStrength})')
+                if dealer.handStrength > 21:
+                    print('Dealer busts, human player wins!')
+                    game = False
+                    human.balance += human.last_bet*2
+                    return human.balance
+
+                active_player = human
+
+            elif dealer.handStrength > human.handStrength and human.last_action == 'Stay':
+                print(
+                    f'Human player hand: {human.hand} (Strength: {human.handStrength})')
+                print('Dealer wins!')
+                return human.balance
+
+        elif dealer.handStrength > human.handStrength and human.last_action == 'Stay' and game:
+            game = False
+            print('Dealer wins!')
+            return human.balance
+
+        elif dealer.handStrength < human.handStrength and human.last_action == 'Stay' and game:
+            game = False
+            print('Human wins!')
+            return human.balance + human.last_bet*2
+
+        elif dealer.handStrength == human.handStrength and game:
+            print('It\'s a tie!')
+            return human.balance + human.last_bet
 
 
 if __name__ == '__main__':
-    create_deck()
-    player1 = create_player('Fred')
-    print(player1)
-    player1.bet(50)
-    player1.check_balance()
-
-    computer = create_player('Computer')
-    print(computer)
-
-    #for suit in deck:
-     #   print(suit)
-      #  for rank in deck[suit]:
-       #     print(rank)
-    player1.hit()
-
-
-
-
+    continue_playing = True
+    remaining_credits = 100
+    while continue_playing:
+        remaining_credits = run_game(remaining_credits)
+        if remaining_credits > 0:
+            another_game = input(
+                f'Your balance is {remaining_credits}, do you want to play another round?(Yes/No) ')
+            if another_game == 'No':
+                continue_playing = False
+        else:
+            print('You have insufficient funds to play another game.')
+            sys.exit()
