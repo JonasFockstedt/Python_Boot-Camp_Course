@@ -16,12 +16,27 @@ def coinFlip(flips):
                 flipped_sides['Tails'] += 1
             else:
                 flipped_sides['Tails'] = 1
-    return f"You flipped a coin {flips} times. The outcomes were:\n\
+    print(f"You flipped a coin {flips} times. The outcomes were:\n\
             Number of heads: {flipped_sides['Heads']} \n\
-            Number of tails: {flipped_sides['Tails']}"
+            Number of tails: {flipped_sides['Tails']}")
 
     
 
 
 if __name__ == '__main__':
-    print(coinFlip(1000))
+    
+    while True:
+        try:
+            n_flips = int(input('How many times would you like to flip a coin?\n'))
+            coinFlip(n_flips)
+            # To keep the script prompt open.
+            again = input('Would you like to flip again? (y/n)').lower()
+            if again == 'y':
+                continue
+            elif again == 'n':
+                break
+
+        except:
+            print('Error: Number of flips must be an integer.')
+            continue
+    
